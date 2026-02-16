@@ -74,3 +74,53 @@ install_package() {
     
     return 1
 }
+
+replace_package() {
+    local old_pkg=$1
+    local new_pkg=$2
+    
+    log_info "Замена пакета $old_pkg на $new_pkg..."
+    
+    if ! opkg list-installed | grep -q "^$old_pkg "; then
+        log_info "Пакет $old_pkg не установлен"
+    fi
+    
+    if opkg list-installed | grep -q "^$new_pkg "; then
+        log_info "Пакет $new_pkg уже установлен"
+        return 0
+    fi
+    
+    # Создаем временную директорию для кэша
+    local tmp_dir="/tmp"
+    
+    # Скачиваем новый пакет
+    if ! opkg download "$new_pkg" --cache /tmp > /tmp/opkg_download.log 2>&1; then
+        log_error "Не удалось скачать пакет $new_pkg"
+        cat /tmp/opkg_download.log >> "$LOG_FILE"
+        rm -rf /tmp/opkg_download.log
+        return 1
+    fi
+    
+    # Удаляем старый пакет
+    if opkg list-installed | grep -q "^$old_pkg "; then
+        log_info "Удаление пакета $old_pkg..."
+        if ! opkg remove "$old_pkg" --force-depends > /tmp/opkg_remove.log 2>&1; then
+            log_warn "Проблемы при удалении $old_pkg"
+            cat /tmp/opkg_remove.log >> "$LOG_FILE"
+        fi
+        rm -f /tmp/opkg_remove.log
+    fi
+    
+    # Устанавливаем новый пакет
+    if opkg install "$new_pkg" --cache /tmp > /tmp/opkg_install.log 2>&1; then
+        cat /tmp/opkg_install.log >> "$LOG_FILE"
+        log_success "Пакет $new_pkg успешно установлен"
+        rm -rf /tmp/opkg_install.log /tmp/opkg_download.log
+        return 0
+    else
+        log_error "Не удалось установить пакет $new_pkg"
+        cat /tmp/opkg_install.log >> "$LOG_FILE"
+        rm -rf /tmp/opkg_install.log /tmp/opkg_download.log
+        return 1
+    fi
+}
