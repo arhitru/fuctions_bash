@@ -43,6 +43,8 @@ log_debug() {
     if [ "$DEBUG" = "1" ]; then
         echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1"
         printf "\033[36;1m[DEBUG] %s\033[0m\n" "$1" >&3 2>/dev/null || true
+    else
+        echo "[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1"
     fi
 }
 
