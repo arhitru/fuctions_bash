@@ -46,8 +46,8 @@ log_debug() {
     fi
 }
 
-log_issue() {
-    echo "[ISSUE] $(date '+%Y-%m-%d %H:%M:%S') - $1"
-    printf "[ISSUE] %s" "$1" >&3 2>/dev/null || true
+log_question() {
+    echo "[QUESTION] $(date '+%Y-%m-%d %H:%M:%S') - $1"
+    printf "[QUESTION] %s" "$1" >&3 2>/dev/null || true
 }
 
