@@ -23,7 +23,3 @@ check_single_instance() {
     trap 'rm -f "$LOCK_FILE" "$PID_FILE"; log_info "Скрипт завершен"; exec 1>&3 2>&4' EXIT
     echo $$ > "$PID_FILE"
 }
-
-load_config() {
-    . "$CONFIG_FILE"
-}
