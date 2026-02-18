@@ -10,10 +10,10 @@ init_logging() {
         fi
         
         # Сохраняем оригинальные дескрипторы только если они еще не сохранены
-        if [ ! -f /tmp/logging_fds_saved ]; then
+    #    if [ ! -f /tmp/logging_fds_saved ]; then
             exec 3>&1 4>&2
-            touch /tmp/logging_fds_saved
-        fi
+     #       touch /tmp/logging_fds_saved
+     #   fi
         
         # Перенаправляем весь вывод в лог-файл и в syslog
         exec 1> >(tee -a "$LOG_FILE" | logger -t "$SCRIPT_NAME" -p user.info)
