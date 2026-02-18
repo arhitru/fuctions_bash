@@ -9,13 +9,8 @@ init_logging() {
             mkdir -p "$LOG_DIR"
         fi
         
-        # Сохраняем оригинальные дескрипторы только если они еще не сохранены
-    #    if [ ! -f /tmp/logging_fds_saved ]; then
-            exec 3>&1 4>&2
-     #       touch /tmp/logging_fds_saved
-     #   fi
-        
         # Перенаправляем весь вывод в лог-файл и в syslog
+        exec 3>&1 4>&2
         exec 1> >(tee -a "$LOG_FILE" | logger -t "$SCRIPT_NAME" -p user.info)
         exec 2> >(tee -a "$LOG_FILE" | logger -t "$SCRIPT_NAME" -p user.err)
         
