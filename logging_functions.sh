@@ -2,6 +2,35 @@
 # Функции логирования
 # ============================================================================
 init_logging() {
+    # Проверяем, не инициализировано ли уже логирование
+    if [ -z "$LOGGING_INITIALIZED" ]; then
+        # Создаем директорию для логов если её нет
+        if [ ! -d "$LOG_DIR" ]; then
+            mkdir -p "$LOG_DIR"
+        fi
+        
+        # Сохраняем оригинальные дескрипторы только если они еще не сохранены
+        if [ ! -f /tmp/logging_fds_saved ]; then
+            exec 3>&1 4>&2
+            touch /tmp/logging_fds_saved
+        fi
+        
+        # Перенаправляем весь вывод в лог-файл и в syslog
+        exec 1> >(tee -a "$LOG_FILE" | logger -t "$SCRIPT_NAME" -p user.info)
+        exec 2> >(tee -a "$LOG_FILE" | logger -t "$SCRIPT_NAME" -p user.err)
+        
+        LOGGING_INITIALIZED=1
+        export LOGGING_INITIALIZED
+        
+        echo "================================================================================"
+        echo "=== Начало установки: $(date) ==="
+        echo "=== Режим выполнения: $([ $AUTO_MODE -eq 1 ] && echo "AUTO" || echo "INTERACTIVE") ==="
+        echo "=== Лог-файл: $LOG_FILE ==="
+        echo "================================================================================"
+    fi
+}
+
+init_logging_old() {
     # Создаем директорию для логов если её нет
     if [ ! -d "$LOG_DIR" ]; then
         mkdir -p "$LOG_DIR"
