@@ -1,18 +1,39 @@
 # ============================================================================
 # Функции проверки системы
 # ============================================================================
-check_system() {
-    log_info "=== Проверка системы ==="
-    
+check_system_load() {
+    # Проверяем что система загрузилась
+    log_info "Проверка системы:"
+    uptime >> $LOG_FILE 2>&1
+    ifconfig >> $LOG_FILE 2>&1
+}
+
+check_net_up() {
+    local NET_WAIT_SEC=$1
+    # Ждем запуска сети
+    log_info "Ожидание сети..."
+    for i in $(seq 1 $NET_WAIT_SEC); do
+        if ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
+            log_success "Сеть доступна"
+            break
+        fi
+        sleep 1
+    done
+}
+
+check_model_router() {
     # Проверка модели устройства
     if [ -f /tmp/sysinfo/model ]; then
-        MODEL=$(cat /tmp/sysinfo/model)
-        log_info "Модель устройства: $MODEL"
+        MODEL_ROUTER=$(cat /tmp/sysinfo/model)
+        log_info "Модель устройства: $MODEL_ROUTER"
     else
-        MODEL="Unknown"
+        MODEL_ROUTER="Unknown"
         log_warn "Не удалось определить модель устройства"
     fi
-    
+    export MODEL_ROUTER
+}
+
+check_version_openwrt(){
     # Проверка версии OpenWrt
     if [ -f /etc/os-release ]; then
         # shellcheck source=/etc/os-release
@@ -21,7 +42,6 @@ check_system() {
         
         VERSION=$(grep 'VERSION=' /etc/os-release | cut -d'"' -f2)
         VERSION_ID=$(echo "$VERSION" | awk -F. '{print $1}')
-        export VERSION_ID
         
         # Проверка совместимости
         if [ "$VERSION_ID" -lt 19 ]; then
@@ -31,35 +51,27 @@ check_system() {
         VERSION_ID=0
         log_warn "Не удалось определить версию OpenWrt"
     fi
-    
-    # Проверка свободного места
-    check_disk_space
-    
-    # Проверка интернета
-    check_internet
-    
-    # Проверка синхронизации времени
-    check_time_sync
+    export VERSION_ID
 }
 
 check_disk_space() {
+    local need_free_spase=$1
     local free_space
     free_space=$(df /overlay | awk 'NR==2 {print $4}')
     local free_space_mb=$((free_space / 1024))
     
     log_info "Свободное место на overlay: ${free_space_mb}MB"
     
-    if [ "$free_space_mb" -lt 10 ]; then
-        log_error "Недостаточно свободного места (<10MB). Требуется минимум 20MB"
-        exit 1
-    elif [ "$free_space_mb" -lt 20 ]; then
-        log_warn "Мало свободного места (<20MB). Установка может не завершиться успешно"
-        if [ $AUTO_MODE -eq 0 ]; then
+    if [ "$free_space_mb" -lt $need_free_spase ]; then
+        log_error "Недостаточно свободного места ($free_space_mb). Требуется минимум $need_free_spase"
+        if [ $AUTO_MODE -eq 0 ] && [ -t 0 ]; then
             echo -n "Продолжить? (y/N): " >&3
             read -r answer
             if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
                 exit 1
             fi
+        else
+            exit 1
         fi
     fi
 }
