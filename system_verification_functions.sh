@@ -9,7 +9,7 @@ check_system_load() {
 }
 
 check_net_up() {
-    local NET_WAIT_SEC=$1
+    NET_WAIT_SEC=$1
     # Ждем запуска сети
     log_info "Ожидание сети..."
     for i in $(seq 1 $NET_WAIT_SEC); do
